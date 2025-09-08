@@ -1,0 +1,5 @@
+{
+  "name": "Class Schedule Builder",
+  "description": "A simple and elegant single-page application for teachers to create and manage their daily class period schedules. Add start and end times for each period and view the schedule at a glance.",
+  "requestFramePermissions": []
+}
