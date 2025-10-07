@@ -31,6 +31,8 @@ interface ScheduleControlsProps {
   onAddSchedule: () => void;
   onRenameSchedule: () => void;
   onDeleteSchedule: () => void;
+  onExportSchedule?: () => void;
+  onImportSchedule?: (file: File) => void;
 }
 
 const ScheduleControls: React.FC<ScheduleControlsProps> = ({
@@ -40,6 +42,8 @@ const ScheduleControls: React.FC<ScheduleControlsProps> = ({
   onAddSchedule,
   onRenameSchedule,
   onDeleteSchedule,
+  onExportSchedule,
+  onImportSchedule,
 }) => {
   
   const hasSchedules = schedules.length > 0;
@@ -93,6 +97,38 @@ const ScheduleControls: React.FC<ScheduleControlsProps> = ({
             className="flex items-center justify-center bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
             <TrashIcon /> Delete
+          </button>
+          <label className="flex items-center justify-center bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm cursor-pointer">
+            <input
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              onChange={(e) => {
+                const files = e.target.files;
+                if (files && files.length > 0) {
+                  onImportSchedule && onImportSchedule(files[0]);
+                  // clear the input so selecting the same file twice triggers change
+                  e.currentTarget.value = '';
+                }
+              }}
+            />
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M3 3a2 2 0 012-2h6a1 1 0 010 2H5v12h10V7a1 1 0 112 0v8a2 2 0 01-2 2H5a2 2 0 01-2-2V3z" />
+              <path d="M7 7l3-3 3 3" />
+            </svg>
+            Import
+          </label>
+          <button
+            onClick={() => onExportSchedule && onExportSchedule()}
+            disabled={!selectedScheduleId}
+            className="flex items-center justify-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            title="Export selected schedule as JSON"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M8 2a1 1 0 00-1 1v6H5l4 4 4-4h-2V3a1 1 0 00-1-1H8z" />
+              <path d="M3 13a1 1 0 011-1h12a1 1 0 011 1v3a2 2 0 01-2 2H5a2 2 0 01-2-2v-3z" />
+            </svg>
+            Export
           </button>
         </div>
       </div>
