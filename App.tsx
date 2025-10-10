@@ -41,6 +41,14 @@ const NoSchedulesState = () => (
     </div>
 );
 
+function uuidv4() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
+    .replace(/[xy]/g, function (c) {
+        const r = Math.random() * 16 | 0, 
+            v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
 
 const formatTime = (time: string): string => {
     if (!time) return '';
@@ -91,7 +99,7 @@ const App: React.FC = () => {
     useEffect(() => {
         // On initial load, if there are no schedules, create a default one.
         if (schedules.length === 0) {
-            const defaultScheduleId = crypto.randomUUID();
+            const defaultScheduleId = uuidv4();
             const defaultSchedule: Schedule = {
                 id: defaultScheduleId,
                 name: "My First Schedule",
@@ -164,7 +172,7 @@ const App: React.FC = () => {
                 if (schedule.id === selectedScheduleId) {
                     return {
                         ...schedule,
-                        periods: [...schedule.periods, { ...newPeriod, id: crypto.randomUUID() }]
+                        periods: [...schedule.periods, { ...newPeriod, id: uuidv4() }]
                     };
                 }
                 return schedule;
@@ -190,7 +198,7 @@ const App: React.FC = () => {
     const handleAddSchedule = () => {
         const name = prompt("Enter a name for the new schedule:", "New Schedule");
         if (name && name.trim()) {
-            const newScheduleId = crypto.randomUUID();
+            const newScheduleId = uuidv4();
             const newSchedule: Schedule = {
                 id: newScheduleId,
                 name: name.trim(),
@@ -226,6 +234,87 @@ const App: React.FC = () => {
                 }
                 return remaining;
             });
+        }
+    };
+
+    const sanitizeFileName = (name: string) => {
+        return name.replace(/[^a-z0-9\-_. ]/gi, '_');
+    };
+
+    const exportSchedule = (scheduleId?: string | null) => {
+        const id = scheduleId ?? selectedScheduleId;
+        if (!id) {
+            alert('No schedule selected to export.');
+            return;
+        }
+
+        const schedule = schedules.find(s => s.id === id);
+        if (!schedule) {
+            alert('Selected schedule not found.');
+            return;
+        }
+
+        try {
+            const dataStr = JSON.stringify(schedule, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const fileName = `${sanitizeFileName(schedule.name)}_${schedule.id}.json`;
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            console.error('Failed to export schedule', e);
+            alert('Failed to export schedule. See console for details.');
+        }
+    };
+
+    const isValidScheduleShape = (obj: any): obj is Schedule => {
+        return obj && typeof obj === 'object' && typeof obj.id === 'string' && typeof obj.name === 'string' && Array.isArray(obj.periods);
+    };
+
+    const importSchedule = async (file?: File) => {
+        if (!file) {
+            alert('No file selected for import.');
+            return;
+        }
+
+        try {
+            const text = await file.text();
+            const parsed = JSON.parse(text);
+
+            if (!isValidScheduleShape(parsed)) {
+                alert('The selected file does not appear to be a valid schedule JSON.');
+                return;
+            }
+
+            // If the id already exists, generate a new one to avoid collisions
+            const idExists = schedules.some(s => s.id === parsed.id);
+            const newSchedule: Schedule = {
+                ...parsed,
+                id: idExists ? uuidv4() : parsed.id,
+                // Ensure periods are well-formed
+                periods: Array.isArray(parsed.periods) ? parsed.periods.map((p: any) => ({
+                    id: typeof p.id === 'string' ? p.id : uuidv4(),
+                    name: typeof p.name === 'string' ? p.name : 'Imported Period',
+                    startTime: typeof p.startTime === 'string' ? p.startTime : '08:00',
+                    endTime: typeof p.endTime === 'string' ? p.endTime : '09:00',
+                })) : []
+            };
+
+            if (idExists) {
+                newSchedule.name = `${newSchedule.name} (imported)`;
+            }
+
+            setSchedules(prev => [...prev, newSchedule]);
+            setSelectedScheduleId(newSchedule.id);
+            alert(`Imported schedule "${newSchedule.name}" successfully.`);
+        } catch (e) {
+            console.error('Failed to import schedule', e);
+            alert('Failed to import schedule. See console for details.');
         }
     };
 
@@ -295,6 +384,8 @@ const App: React.FC = () => {
                                 onAddSchedule={handleAddSchedule}
                                 onRenameSchedule={handleRenameSchedule}
                                 onDeleteSchedule={handleDeleteSchedule}
+                                onExportSchedule={exportSchedule}
+                                onImportSchedule={importSchedule}
                             />
 
                              <div className="mt-8">
@@ -310,6 +401,8 @@ const App: React.FC = () => {
                                     onAddSchedule={handleAddSchedule}
                                     onRenameSchedule={handleRenameSchedule}
                                     onDeleteSchedule={handleDeleteSchedule}
+                                    onExportSchedule={exportSchedule}
+                                    onImportSchedule={importSchedule}
                                 />
                                 <NoSchedulesState />
                             </>
