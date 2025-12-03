@@ -79,6 +79,12 @@ const ActivePeriodDisplay: React.FC<ActivePeriodDisplayProps> = ({ activePeriod,
                             ></div>
                         </div>
                     </div>
+                    {activePeriod.agenda && (
+                        <div className="mt-4 pt-4 border-t border-gray-200">
+                            <h4 className="text-md font-semibold text-gray-800 text-center mb-2">Today's Agenda</h4>
+                            <p className="text-sm text-gray-600 whitespace-pre-wrap bg-gray-50 p-3 rounded-md">{activePeriod.agenda}</p>
+                        </div>
+                    )}
                      {nextPeriod && (
                         <p className="text-center text-sm text-gray-500 mt-4">
                             <strong>Up next:</strong> {nextPeriod.name} at {formatTime(nextPeriod.startTime)}

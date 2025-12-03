@@ -76,6 +76,8 @@ const App: React.FC = () => {
     });
 
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [expandedPeriods, setExpandedPeriods] = useState<Record<string, boolean>>({});
+    const [editingPeriod, setEditingPeriod] = useState<Period | null>(null);
 
      useEffect(() => {
         const timerId = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -193,6 +195,31 @@ const App: React.FC = () => {
                 return schedule;
             })
         );
+    };
+
+    const updatePeriod = (updatedPeriod: Period) => {
+        if (!selectedScheduleId) return;
+        setSchedules(prevSchedules =>
+            prevSchedules.map(schedule => {
+                if (schedule.id === selectedScheduleId) {
+                    return {
+                        ...schedule,
+                        periods: schedule.periods.map(period =>
+                            period.id === updatedPeriod.id ? updatedPeriod : period
+                        )
+                    };
+                }
+                return schedule;
+            })
+        );
+        setEditingPeriod(null); // Exit edit mode after updating
+    };
+
+    const togglePeriodExpansion = (periodId: string) => {
+        setExpandedPeriods(prev => ({
+            ...prev,
+            [periodId]: !prev[periodId]
+        }));
     };
     
     const handleAddSchedule = () => {
@@ -343,32 +370,62 @@ const App: React.FC = () => {
                                 />
 
                                 <h2 className="text-3xl font-bold text-gray-800 my-4">{selectedSchedule?.name || 'Schedule'}</h2>
-                                <div className="space-y-4">
+                                 <div className="space-y-4">
                                     {sortedPeriods.length > 0 ? (
                                         sortedPeriods.map((period, index) => (
-                                            <div 
-                                              key={period.id} 
-                                              className="bg-white rounded-xl shadow-lg p-4 flex items-center justify-between transition-all duration-300 hover:shadow-xl hover:scale-105"
-                                            >
-                                                <div className="flex items-center">
-                                                    <div className="text-center w-12 mr-4">
-                                                        <p className="font-bold text-xl text-indigo-600">{index + 1}</p>
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="text-lg font-semibold text-gray-900">{period.name}</h3>
-                                                        <div className="flex items-center text-sm text-gray-600 mt-1">
-                                                            <ClockIcon />
-                                                            <span className="ml-2">{formatTime(period.startTime)} - {formatTime(period.endTime)}</span>
+                                            <div key={period.id} className="bg-white rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105">
+                                                <div className="p-4 flex items-center justify-between">
+                                                    <div className="flex items-center">
+                                                        <div className="text-center w-12 mr-4">
+                                                            <p className="font-bold text-xl text-indigo-600">{index + 1}</p>
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="text-lg font-semibold text-gray-900">{period.name}</h3>
+                                                            <div className="flex items-center text-sm text-gray-600 mt-1">
+                                                                <ClockIcon />
+                                                                <span className="ml-2">{formatTime(period.startTime)} - {formatTime(period.endTime)}</span>
+                                                            </div>
                                                         </div>
                                                     </div>
+                                                    <div className="flex items-center">
+                                                        {period.agenda && (
+                                                            <button
+                                                                onClick={() => togglePeriodExpansion(period.id)}
+                                                                className="text-gray-400 hover:text-indigo-500 p-2 rounded-full hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors mr-2"
+                                                                aria-label="Toggle agenda"
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 transition-transform ${expandedPeriods[period.id] ? 'transform rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                                                                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                                                </svg>
+                                                            </button>
+                                                        )}
+                                                        {/* Edit Icon Button */}
+                                                        {selectedSchedule && (
+                                                            <button
+                                                                onClick={() => setEditingPeriod(period)}
+                                                                className="text-gray-400 hover:text-blue-500 p-2 rounded-full hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors mr-2"
+                                                                aria-label={`Edit ${period.name} period`}
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                                                </svg>
+                                                            </button>
+                                                        )}
+                                                        <button 
+                                                            onClick={() => deletePeriod(period.id)}
+                                                            className="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                                                            aria-label={`Delete ${period.name} period`}
+                                                        >
+                                                            <TrashIcon />
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <button 
-                                                    onClick={() => deletePeriod(period.id)}
-                                                    className="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
-                                                    aria-label={`Delete ${period.name} period`}
-                                                >
-                                                    <TrashIcon />
-                                                </button>
+                                                {expandedPeriods[period.id] && period.agenda && (
+                                                    <div className="p-4 border-t border-gray-200">
+                                                        <h4 className="text-md font-semibold text-gray-800 mb-2">Agenda</h4>
+                                                        <p className="text-sm text-gray-600 whitespace-pre-wrap">{period.agenda}</p>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))
                                     ) : (
@@ -389,7 +446,13 @@ const App: React.FC = () => {
                             />
 
                              <div className="mt-8">
-                                <ScheduleForm onAddPeriod={addPeriod} disabled={!selectedSchedule} />
+                                <ScheduleForm 
+                                    onAddPeriod={addPeriod} 
+                                    onUpdatePeriod={updatePeriod}
+                                    editingPeriod={editingPeriod}
+                                    onCancelEdit={() => setEditingPeriod(null)}
+                                    disabled={!selectedSchedule} 
+                                />
                              </div>
                            </>
                         ) : (
